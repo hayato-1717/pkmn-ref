@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>黄金カイリューハッサム 対戦リファレンス</title>
+<style>
+  :root{
+    --surface:#1a1a19; --page:#0d0d0d;
+    --ink:#ffffff; --ink2:#c3c2b7; --muted:#898781;
+    --grid:#2c2c2a; --border:rgba(255,255,255,0.10);
+    --good:#0ca30c; --warn:#fab219; --crit:#d03b3b;
+    --good-bg:rgba(12,163,12,0.18); --warn-bg:rgba(250,178,25,0.16);
+    --crit-bg:rgba(208,59,59,0.20); --flat-bg:rgba(255,255,255,0.04);
+  }
+  @media (prefers-color-scheme: light){
+    :root{
+      --surface:#fcfcfb; --page:#f9f9f7;
+      --ink:#0b0b0b; --ink2:#52514e; --muted:#898781;
+      --grid:#e1e0d9; --border:rgba(11,11,11,0.10);
+      --good:#006300; --warn:#8a5a00; --crit:#b02525;
+      --good-bg:rgba(0,99,0,0.10); --warn-bg:rgba(138,90,0,0.10);
+      --crit-bg:rgba(176,37,37,0.10); --flat-bg:rgba(11,11,11,0.03);
+    }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--page);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic UI",sans-serif;
+    line-height:1.6;-webkit-text-size-adjust:100%}
+  .wrap{max-width:1080px;margin:0 auto;padding:20px 14px 64px}
+  header{border-bottom:1px solid var(--border);padding-bottom:16px;margin-bottom:22px}
+  h1{font-size:20px;margin:0 0 4px;letter-spacing:.01em}
+  .sub{color:var(--muted);font-size:12px;margin:0}
+  h2{font-size:15px;margin:34px 0 10px;padding-left:9px;border-left:3px solid var(--ink2);letter-spacing:.02em}
+  h3{font-size:13px;margin:18px 0 8px;color:var(--ink2)}
+  p{font-size:13px;color:var(--ink2);margin:6px 0}
+  .hero{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0 4px}
+  .tile{background:var(--surface);border:1px solid var(--border);border-radius:10px;
+    padding:12px 14px;flex:1 1 150px;min-width:140px}
+  .tile .n{font-size:26px;font-weight:700;letter-spacing:-.02em;line-height:1.1}
+  .tile .l{font-size:11px;color:var(--muted);margin-top:3px}
+  .tile.g .n{color:var(--good)}
+  table{border-collapse:separate;border-spacing:0;width:100%;font-size:12.5px;
+    background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+  th,td{padding:7px 9px;text-align:left;border-bottom:1px solid var(--grid);vertical-align:top}
+  th{color:var(--muted);font-weight:600;font-size:11px;letter-spacing:.03em;white-space:nowrap}
+  tr:last-child td{border-bottom:none}
+  td b{color:var(--ink)}
+  .scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:10px}
+  /* ---- matrix ---- */
+  table.mx{font-size:12px;min-width:600px}
+  table.mx th.foe{position:sticky;left:0;background:var(--surface);z-index:2;
+    text-align:left;color:var(--ink);font-weight:600;min-width:140px;border-right:1px solid var(--grid)}
+  table.mx td.c{text-align:center;padding:0;height:34px;cursor:default}
+  table.mx td.c .m{display:block;margin:2px;border-radius:5px;padding:6px 0;
+    font-size:14px;line-height:1.1;font-weight:700;border:1px solid transparent}
+  .m.good{background:var(--good-bg);color:var(--good);border-color:rgba(12,163,12,.35)}
+  .m.ok{background:var(--warn-bg);color:var(--warn);border-color:rgba(250,178,25,.35)}
+  .m.bad{background:var(--crit-bg);color:var(--crit);border-color:rgba(208,59,59,.4)}
+  .m.flat{background:var(--flat-bg);color:var(--muted)}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:11.5px;color:var(--ink2);margin:10px 0 2px}
+  .legend span{display:inline-flex;align-items:center;gap:5px}
+  .sw{width:14px;height:14px;border-radius:4px;display:inline-block;text-align:center;
+    font-size:11px;line-height:14px;font-weight:700}
+  /* ---- tooltip ---- */
+  #tt{position:fixed;pointer-events:none;opacity:0;transition:opacity .1s;
+    background:var(--surface);border:1px solid var(--border);border-radius:8px;
+    padding:8px 10px;font-size:11.5px;color:var(--ink2);max-width:230px;z-index:50;
+    box-shadow:0 6px 20px rgba(0,0,0,.35)}
+  #tt b{color:var(--ink);display:block;margin-bottom:3px;font-size:12px}
+  #tt .a{color:var(--good)} #tt .d{color:var(--crit)}
+  /* ---- speed line ---- */
+  .spd{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:4px 0}
+  .row{display:flex;align-items:center;gap:10px;padding:5px 12px;border-bottom:1px solid var(--grid);font-size:12.5px}
+  .row:last-child{border-bottom:none}
+  .row .v{font-variant-numeric:tabular-nums;font-weight:700;min-width:44px;text-align:right;color:var(--ink)}
+  .row .bar{height:5px;border-radius:3px;background:var(--muted);opacity:.45}
+  .row.me .bar{background:var(--good);opacity:.9}
+  .row.me .v{color:var(--good)}
+  .row .t{color:var(--ink2);font-size:12px}
+  .note{font-size:11.5px;color:var(--muted);margin-top:8px}
+  .warnbox{background:var(--crit-bg);border:1px solid rgba(208,59,59,.35);border-radius:9px;
+    padding:10px 12px;font-size:12.5px;color:var(--ink2);margin:10px 0}
+  .warnbox b{color:var(--crit)}
+  .okbox{background:var(--good-bg);border:1px solid rgba(12,163,12,.3);border-radius:9px;
+    padding:10px 12px;font-size:12.5px;color:var(--ink2);margin:10px 0}
+  .okbox b{color:var(--good)}
+  ol{font-size:13px;color:var(--ink2);padding-left:20px;margin:8px 0}
+  ol li{margin:5px 0}
+  code{background:var(--flat-bg);padding:1px 5px;border-radius:4px;font-size:11.5px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>黄金カイリューハッサム 対戦リファレンス</h1>
+  <p class="sub">M-5環境 / 全数値 pkmn_matrix.py 計算・回帰テスト7/7一致 / 2026-08-28</p>
+</header>
+
+<div class="hero">
+  <div class="tile g"><div class="n">0</div><div class="l">回答ゼロの相手（TOP20中）</div></div>
+  <div class="tile"><div class="n">22</div><div class="l">検証した環境脅威</div></div>
+  <div class="tile"><div class="n">16</div><div class="l">サーフゴーの守備範囲（最広）</div></div>
+  <div class="tile"><div class="n">2</div><div class="l">直近の敗因＝選出とプレイ</div></div>
+</div>
+
+<h2>1. 選出の決め方</h2>
+<table>
+  <tr><th style="width:70px">Step 1</th><td><b>カバルドンを入れる</b>（基本確定）。ステロが全ての確1ラインの前提。
+    ウルガモスは<b>いわ4倍でHPの49%</b>、ミミロップは6%でもアシレーヌのムンフォが<b>乱1→確1</b>に変わる</td></tr>
+  <tr><th>Step 2</th><td><b>相手の一番重い駒への回答を1枚</b>（下の対策表から選ぶ）</td></tr>
+  <tr><th>Step 3</th><td><b>Step2の駒が落とされる相手を3枠目で埋める</b><br>
+    サーフゴー→ガブ/ウルガモスに弱い→<b>カバルドン</b>／メガカイリュー→ミミロップに弱い→<b>アシレーヌ</b></td></tr>
+  <tr><th>メガ</th><td>カイリューとハッサムを<b>両方選出して展開を見てから切る</b>（相手はどちらがメガか読めない）。
+    ただし<b>ウルガモス/炎メガがいるならハッサムをメガらない</b>、<b>ミミロップ/氷技がいるならカイリューをメガらない</b></td></tr>
+</table>
+
+<h2>2. カバレッジ・マトリクス</h2>
+<div class="legend">
+  <span><i class="sw m good">◎</i>倒せて落とされない</span>
+  <span><i class="sw m ok">○</i>倒せるが落とされる</span>
+  <span><i class="sw m flat">△</i>決め手なし</span>
+  <span><i class="sw m bad">×</i>落とされる（出すな）</span>
+</div>
+<p class="note">セルにカーソル／タップで与ダメ・被ダメを表示。◎○△×の記号が意味を持つので色が見えなくても読めます。</p>
+<div class="scroll"><table class="mx" id="mx"></table></div>
+
+<h2>3. 相手別 対策クイックリファレンス</h2>
+<div class="scroll"><table>
+<tr><th>順</th><th>相手</th><th>出す駒</th><th>決め技・数値</th></tr>
+<tr><td>1</td><td><b>ガブリアス</b><br><span style="color:var(--muted);font-size:11px">タスキ40.7/スカーフ19.7</span></td><td><b>メガカイリュー</b></td><td>りゅうのはどう 108-127% 確1・<b>じしん無効</b></td></tr>
+<tr><td>4</td><td><b>ブリジュラス</b></td><td><b>サーフゴー</b></td><td>シャドーボール×3発・<b>特殊なのでB上昇を無視</b></td></tr>
+<tr><td>5</td><td><b>ミミッキュ</b></td><td><b>メガハッサム</b></td><td>バレパン 97-115%（皮剥がし後）</td></tr>
+<tr><td>7</td><td><b>メガギャラドス</b></td><td><b>メガハッサム</b></td><td>全技を半減以下で受ける。剣舞1とんぼ <b>133-157% 確1</b></td></tr>
+<tr><td>9</td><td>メガマフォクシー</td><td><b>カバルドン</b></td><td>じしん 107-127% <b>確定1発</b></td></tr>
+<tr><td>10</td><td>メガメタグロス</td><td>メガカイリュー／カバルドン</td><td>かえんほうしゃ／じしん</td></tr>
+<tr><td>11</td><td>メガリザードンY</td><td>メガカイリュー／アシレーヌ</td><td>⚠ ハッサムは4倍で即死</td></tr>
+<tr><td>13</td><td>ハッサム(非メガ)</td><td><b>メガカイリュー</b></td><td>かえんほうしゃ 163-192% <b>確定1発</b></td></tr>
+<tr><td>19</td><td>メガゲンガー</td><td>カバルドン／サザンドラ</td><td>⚠ <b>アシレーヌは×</b></td></tr>
+<tr><td>26</td><td>ドドゲザン</td><td>メガカイリュー／カバルドン</td><td>⚠ <b>サーフゴーは×</b></td></tr>
+<tr><td>27/29</td><td><b>ブラッキー／ニンフィア</b><br><span style="color:var(--muted);font-size:11px">受け駒</span></td><td><b>サーフゴー</b></td><td>ゴールドラッシュ <b>ニンフィアに確定1発</b></td></tr>
+<tr><td>—</td><td>ウルガモス</td><td>カバルドン／アシレーヌ</td><td>じしん54-63%／うたかた72-85%</td></tr>
+<tr><td>—</td><td><b>メガミミロップ</b></td><td><b>アシレーヌ</b></td><td>ムンフォ 98-116%（<b>ステロ込みで確1</b>）</td></tr>
+</table></div>
+
+<h2>4. 絶対に出してはいけない相手</h2>
+<div class="warnbox">
+<b>サザンドラ</b> → フェアリー全般（ニンフィアのハイボ <b>174-205% 確定1発</b>）・氷・アシレーヌ<br>
+<b>メガハッサム</b> → ウルガモス（かえんほうしゃ <b>197-232% 無積みで確定1発</b>）・メガリザY・炎/格闘メガ<br>
+<b>メガカイリュー</b> → メガミミロップ（トリプルアクセル <b>172-203% 確定1発</b>・氷4倍3連撃でマルスケが剥がれる）<br>
+<b>サーフゴー</b> → ガブリアス（地面2倍）・ウルガモス（炎2倍）・ドドゲザン<br>
+<b>アシレーヌ</b> → メガゲンガー・剣舞ガブ・メガギャラドスのパワーウィップ<br>
+<b>カバルドン</b> → <b>なし</b>（環境22体に対し落とされる数0）
+</div>
+
+<h2>5. 特性の落とし穴</h2>
+<table>
+<tr><th>特性</th><th>誰</th><th>影響</th></tr>
+<tr><td><b>かたやぶり</b></td><td>メガギャラドス</td><td><b>マルチスケイル（カイリュー）とふゆう（サザンドラ）を無視する。</b>サザンにじしんが通る</td></tr>
+<tr><td>じきゅうりょく</td><td>ブリジュラス 72.7%</td><td>物理を受けるたびB上昇 → カバ/ハッサムの物理は撃つほど通らない。<b>特殊のサーフゴーで殴る</b></td></tr>
+<tr><td>ばけのかわ</td><td>ミミッキュ 100%</td><td>皮1回無敵＝<b>最低2ターン拘束される前提</b>で組む</td></tr>
+<tr><td>フェアリースキン</td><td>ニンフィア</td><td>ノーマル技がフェアリー化＋威力1.2倍（ハイパーボイス＝実質フェアリー108）</td></tr>
+</table>
+
+<h2>6. 素早さライン</h2>
+<div class="spd" id="spd"></div>
+<p class="note"><b>積みエースは竜舞1回で217-219に到達し250未満を全部抜く。</b>
+逆にスカーフマスカーニャ288・ドラパルト319は積み後も上を取れる＝これが積み対策の要。</p>
+
+<h2>7. 覚える12のダメージライン</h2>
+<div class="scroll"><table>
+<tr><th>状況</th><th>結果</th></tr>
+<tr><td>ニンフィア ハイボ → <b>サザンドラ</b></td><td><b style="color:var(--crit)">174-205% 確定1発</b></td></tr>
+<tr><td>ウルガモス 炎 → <b>メガハッサム</b></td><td><b style="color:var(--crit)">197-232% 無積みで確定1発</b></td></tr>
+<tr><td>メガミミロップ トリアク → <b>メガカイリュー</b></td><td><b style="color:var(--crit)">172-203% 確定1発</b></td></tr>
+<tr><td>ブリジュラス 竜星群 → サザンドラ</td><td><b style="color:var(--crit)">115-136% 確定1発</b></td></tr>
+<tr><td>メガギャラドス こおりのキバ → メガカイリュー</td><td>91-107% 乱数1発</td></tr>
+<tr><td><b>サーフゴー</b> ゴールドラッシュ → ニンフィア</td><td><b style="color:var(--good)">確定1発</b></td></tr>
+<tr><td><b>メガカイリュー</b> 竜はどう → ガブリアス</td><td><b style="color:var(--good)">108-127% 確定1発</b>（じしん無効）</td></tr>
+<tr><td><b>メガカイリュー</b> 炎 → 相手ハッサム</td><td><b style="color:var(--good)">163-192% 確定1発</b></td></tr>
+<tr><td><b>カバルドン</b> じしん → メガマフォクシー</td><td><b style="color:var(--good)">107-127% 確定1発</b></td></tr>
+<tr><td>メガハッサム 剣舞1バレパン → ニンフィア</td><td>99-116% 乱数1発</td></tr>
+<tr><td><b>メガハッサム</b> 剣舞1とんぼ → メガギャラドス</td><td><b style="color:var(--good)">133-157% 確定1発</b></td></tr>
+<tr><td>アシレーヌ ムンフォ → メガミミロップ</td><td>98-116%（<b style="color:var(--good)">ステロ込みで確1</b>）</td></tr>
+</table></div>
+
+<h2>8. 立ち回り5原則</h2>
+<ol>
+<li><b>ステロを最優先で撒く。</b>全ての確1ラインがステロの有無で変わる</li>
+<li><b>相手が受け出ししてきたら、殴り続けずに駒を変える。</b>受け出し＝相手が「殴られたくない」と言っている</li>
+<li><b>積みエースにはカバルドンのふきとばし。</b>TOD廃止環境では受け切りが成立しない</li>
+<li><b>先制技（バレパン・アクジェ）は温存し、削れた相手を刈るのに使う</b></li>
+<li><b>選出した3体は全員に仕事をさせる前提で回す。</b>選出時に「誰で誰を倒すか」を先に決める</li>
+</ol>
+
+<h2>9. 自分の敗因パターン</h2>
+<table>
+<tr><th>癖</th><th>実例</th><th>対策</th></tr>
+<tr><td>リスク駒を選出する</td><td>ニンフィア入りにサザンドラ → 確定1発</td><td><b>フェアリー/氷が見えたらサザン選出禁止</b></td></tr>
+<tr><td>主軸1匹に全部やらせる</td><td>アシレーヌで2体倒して力尽き、ミミロップに全抜き</td><td>倒せる駒に<b>交代して仕事させる</b></td></tr>
+<tr><td>有利な駒を使わず終わる</td><td>メガカイリューが出番ゼロ（ハッサム・ガブを両方確1できた）</td><td><b>選出時に役割を割り振る</b></td></tr>
+<tr><td>盤面を見ずに評価する</td><td>ステロ・累積ダメージ・優先度の計算漏れ</td><td>「素のHPで何%」ではなく<b>その盤面で落ちるか</b>で判断</td></tr>
+</table>
+
+<h2>10. 未検証事項</h2>
+<p>技の威力は <code>master-move.json</code> に威力フィールドが無いため本編準拠を仮定（ゴールドラッシュの確1結論のみ実測換算で仮定に非依存）。
+性格は <code>master-nature.json</code> が403のため努力値からの推定。
+型は各1つに固定して計算しているため、<b>持ち物が判明した時点で数値は変わる</b>（ガブだけでもタスキ40.7/スカーフ19.7/オボン14）。</p>
+
+</div>
+<div id="tt"></div>
+
+<script>
+const DATA = {"mine": [{"name": "メガカイリュー", "S": 152, "H": 167}, {"name": "メガハッサム", "S": 95, "H": 177}, {"name": "カバルドン", "S": 67, "H": 215}, {"name": "アシレーヌ", "S": 103, "H": 187}, {"name": "サザンドラ", "S": 150, "H": 169}, {"name": "サーフゴー", "S": 121, "H": 189}], "foes": [{"name": "1 ガブリアス", "S": 169, "H": 183, "types": "ドラゴン/じめん"}, {"name": "2 アシレーヌ", "S": 103, "H": 187, "types": "みず/フェアリー"}, {"name": "3 マスカーニャ", "S": 192, "H": 151, "types": "くさ/あく"}, {"name": "4 ブリジュラス", "S": 137, "H": 167, "types": "はがね/ドラゴン"}, {"name": "5 ミミッキュ", "S": 148, "H": 130, "types": "ゴースト/フェアリー"}, {"name": "6 カバルドン", "S": 67, "H": 215, "types": "じめん"}, {"name": "7 メガギャラドス", "S": 145, "H": 171, "types": "みず/あく"}, {"name": "8 メガカイリュー", "S": 152, "H": 167, "types": "ドラゴン/ひこう"}, {"name": "9 メガマフォクシー", "S": 204, "H": 151, "types": "ほのお/エスパー"}, {"name": "10 メガメタグロス", "S": 162, "H": 155, "types": "はがね/エスパー"}, {"name": "11 メガリザードンY", "S": 167, "H": 154, "types": "ほのお/ひこう"}, {"name": "12 アーマーガア", "S": 87, "H": 205, "types": "ひこう/はがね"}, {"name": "13 ハッサム(非メガ)", "S": 76, "H": 177, "types": "むし/はがね"}, {"name": "14 イダイトウ", "S": 113, "H": 197, "types": "みず/ゴースト"}, {"name": "17 メガライチュウY", "S": 200, "H": 136, "types": "でんき"}, {"name": "18 ゲッコウガ", "S": 191, "H": 147, "types": "みず/あく"}, {"name": "19 メガゲンガー", "S": 200, "H": 136, "types": "ゴースト/どく"}, {"name": "21 ヒスイダイケンキ", "S": 115, "H": 181, "types": "みず/あく"}, {"name": "22 ギルガルド", "S": 82, "H": 167, "types": "はがね/ゴースト"}, {"name": "26 ドドゲザン", "S": 96, "H": 183, "types": "あく/はがね"}, {"name": "27 ブラッキー", "S": 85, "H": 202, "types": "あく"}, {"name": "29 ニンフィア", "S": 81, "H": 202, "types": "フェアリー"}], "cells": [[{"v": "good", "atk": "りゅうのはどう", "ap": "108-127%", "ae": 2.0, "dfn": "スケイルショット", "dp": "74-87%", "de": 2.0}, {"v": "flat", "atk": "とんぼがえり", "ap": "36-42%", "ae": 1.0, "dfn": "じしん", "dp": "30-36%", "de": 1.0}, {"v": "flat", "atk": "じしん", "ap": "36-42%", "ae": 1.0, "dfn": "じしん", "dp": "34-40%", "de": 1.0}, {"v": "good", "atk": "ムーンフォース", "ap": "86-102%", "ae": 2.0, "dfn": "じしん", "dp": "58-69%", "de": 1.0}, {"v": "ok", "atk": "りゅうせいぐん", "ap": "147-173%", "ae": 2.0, "dfn": "スケイルショット", "dp": "90-106%", "de": 2.0}, {"v": "ok", "atk": "ゴールドラッシュ", "ap": "86-102%", "ae": 1.0, "dfn": "じしん", "dp": "95-112%", "de": 2.0}], [{"v": "good", "atk": "10まんボルト", "ap": "57-68%", "ae": 2.0, "dfn": "ムーンフォース", "dp": "77-91%", "de": 2.0}, {"v": "flat", "atk": "バレットパンチ", "ap": "36-43%", "ae": 1.0, "dfn": "うたかた", "dp": "37-44%", "de": 1.0}, {"v": "flat", "atk": "じしん", "ap": "42-50%", "ae": 1.0, "dfn": "うたかた", "dp": "54-64%", "de": 2.0}, {"v": "flat", "atk": "ムーンフォース", "ap": "33-40%", "ae": 1.0, "dfn": "ムーンフォース", "dp": "36-43%", "de": 1.0}, {"v": "bad", "atk": "あくのはどう", "ap": "17-20%", "ae": 0.5, "dfn": "ムーンフォース", "dp": "201-236%", "de": 4.0}, {"v": "good", "atk": "ゴールドラッシュ", "ap": "66-79%", "ae": 1.0, "dfn": "うたかた", "dp": "37-44%", "de": 1.0}], [{"v": "good", "atk": "かえんほうしゃ", "ap": "108-128%", "ae": 2.0, "dfn": "トリプルアクセル", "dp": "67-79%", "de": 4.0}, {"v": "good", "atk": "とんぼがえり", "ap": "217-256%", "ae": 4.0, "dfn": "はたきおとす", "dp": "19-22%", "de": 1.0}, {"v": "flat", "atk": "じしん", "ap": "26-31%", "ae": 0.5, "dfn": "トリックフラワー", "dp": "43-51%", "de": 2.0}, {"v": "good", "atk": "ムーンフォース", "ap": "124-147%", "ae": 2.0, "dfn": "トリックフラワー", "dp": "74-87%", "de": 2.0}, {"v": "good", "atk": "りゅうせいぐん", "ap": "104-123%", "ae": 1.0, "dfn": "トリプルアクセル", "dp": "40-47%", "de": 2.0}, {"v": "good", "atk": "ゴールドラッシュ", "ap": "124-147%", "ae": 1.0, "dfn": "はたきおとす", "dp": "59-70%", "de": 2.0}], [{"v": "ok", "atk": "りゅうのはどう", "ap": "73-86%", "ae": 1.0, "dfn": "りゅうせいぐん", "dp": "118-140%", "de": 2.0}, {"v": "flat", "atk": "とんぼがえり", "ap": "14-17%", "ae": 0.5, "dfn": "りゅうせいぐん", "dp": "33-39%", "de": 0.5}, {"v": "good", "atk": "じしん", "ap": "61-71%", "ae": 2.0, "dfn": "りゅうせいぐん", "dp": "48-57%", "de": 1.0}, {"v": "good", "atk": "ムーンフォース", "ap": "59-70%", "ae": 1.0, "dfn": "10まんボルト", "dp": "52-62%", "de": 2.0}, {"v": "ok", "atk": "りゅうせいぐん", "ap": "100-118%", "ae": 1.0, "dfn": "りゅうせいぐん", "dp": "153-181%", "de": 2.0}, {"v": "good", "atk": "シャドーボール", "ap": "79-94%", "ae": 1.0, "dfn": "りゅうせいぐん", "dp": "33-39%", "de": 0.5}], [{"v": "flat", "atk": "かえんほうしゃ", "ap": "45-53%", "ae": 1.0, "dfn": "じゃれつく", "dp": "71-83%", "de": 2.0}, {"v": "good", "atk": "バレットパンチ", "ap": "97-115%", "ae": 2.0, "dfn": "じゃれつく", "dp": "11-14%", "de": 0.5}, {"v": "good", "atk": "じしん", "ap": "56-66%", "ae": 1.0, "dfn": "じゃれつく", "dp": "26-32%", "de": 1.0}, {"v": "good", "atk": "ムーンフォース", "ap": "52-62%", "ae": 1.0, "dfn": "じゃれつく", "dp": "45-53%", "de": 1.0}, {"v": "ok", "atk": "あくのはどう", "ap": "54-64%", "ae": 1.0, "dfn": "じゃれつく", "dp": "174-205%", "de": 4.0}, {"v": "good", "atk": "ゴールドラッシュ", "ap": "210-247%", "ae": 2.0, "dfn": "かげうち", "dp": "32-39%", "de": 2.0}], [{"v": "good", "atk": "りゅうのはどう", "ap": "51-60%", "ae": 1.0, "dfn": "じしん", "dp": "0-0%", "de": 0.0}, {"v": "flat", "atk": "とんぼがえり", "ap": "19-22%", "ae": 1.0, "dfn": "じしん", "dp": "22-27%", "de": 1.0}, {"v": "flat", "atk": "じしん", "ap": "19-22%", "ae": 1.0, "dfn": "じしん", "dp": "25-29%", "de": 1.0}, {"v": "good", "atk": "うたかた", "ap": "71-83%", "ae": 2.0, "dfn": "じしん", "dp": "42-50%", "de": 1.0}, {"v": "good", "atk": "りゅうせいぐん", "ap": "71-83%", "ae": 1.0, "dfn": "じしん", "dp": "40-47%", "de": 1.0}, {"v": "good", "atk": "ゴールドラッシュ", "ap": "83-98%", "ae": 1.0, "dfn": "じしん", "dp": "69-82%", "de": 2.0}], [{"v": "ok", "atk": "10まんボルト", "ap": "58-69%", "ae": 2.0, "dfn": "こおりのキバ", "dp": "91-107%", "de": 4.0}, {"v": "good", "atk": "とんぼがえり", "ap": "68-80%", "ae": 2.0, "dfn": "じしん", "dp": "23-27%", "de": 1.0}, {"v": "flat", "atk": "じしん", "ap": "33-40%", "ae": 1.0, "dfn": "パワーウィップ", "dp": "62-73%", "de": 2.0}, {"v": "ok", "atk": "ムーンフォース", "ap": "66-78%", "ae": 2.0, "dfn": "パワーウィップ", "dp": "105-125%", "de": 2.0}, {"v": "good", "atk": "りゅうせいぐん", "ap": "55-65%", "ae": 1.0, "dfn": "こおりのキバ", "dp": "55-65%", "de": 2.0}, {"v": "flat", "atk": "ゴールドラッシュ", "ap": "32-38%", "ae": 0.5, "dfn": "じしん", "dp": "71-84%", "de": 2.0}], [{"v": "ok", "atk": "りゅうのはどう", "ap": "86-101%", "ae": 2.0, "dfn": "りゅうせいぐん", "dp": "131-154%", "de": 2.0}, {"v": "bad", "atk": "バレットパンチ", "ap": "28-34%", "ae": 1.0, "dfn": "かえんほうしゃ", "dp": "140-164%", "de": 4.0}, {"v": "flat", "atk": "じしん", "ap": "0-0%", "ae": 0.0, "dfn": "りゅうせいぐん", "dp": "54-64%", "de": 1.0}, {"v": "good", "atk": "ムーンフォース", "ap": "70-82%", "ae": 2.0, "dfn": "かえんほうしゃ", "dp": "14-17%", "de": 0.5}, {"v": "ok", "atk": "りゅうせいぐん", "ap": "118-140%", "ae": 2.0, "dfn": "りゅうせいぐん", "dp": "171-202%", "de": 2.0}, {"v": "good", "atk": "ゴールドラッシュ", "ap": "69-82%", "ae": 1.0, "dfn": "かえんほうしゃ", "dp": "70-83%", "de": 2.0}], [{"v": "flat", "atk": "りゅうのはどう", "ap": "47-56%", "ae": 1.0, "dfn": "サイコショック", "dp": "44-52%", "de": 1.0}, {"v": "ok", "atk": "とんぼがえり", "ap": "53-63%", "ae": 1.0, "dfn": "オーバーヒート", "dp": "293-345%", "de": 4.0}, {"v": "good", "atk": "じしん", "ap": "107-127%", "ae": 2.0, "dfn": "オーバーヒート", "dp": "53-62%", "de": 1.0}, {"v": "good", "atk": "うたかた", "ap": "67-79%", "ae": 2.0, "dfn": "サイコショック", "dp": "42-50%", "de": 1.0}, {"v": "good", "atk": "あくのはどう", "ap": "82-96%", "ae": 2.0, "dfn": "オーバーヒート", "dp": "41-49%", "de": 0.5}, {"v": "ok", "atk": "シャドーボール", "ap": "104-123%", "ae": 2.0, "dfn": "オーバーヒート", "dp": "148-174%", "de": 2.0}], [{"v": "good", "atk": "かえんほうしゃ", "ap": "72-86%", "ae": 2.0, "dfn": "サイコファング", "dp": "46-54%", "de": 1.0}, {"v": "flat", "atk": "とんぼがえり", "ap": "28-33%", "ae": 1.0, "dfn": "じしん", "dp": "24-28%", "de": 1.0}, {"v": "good", "atk": "じしん", "ap": "56-67%", "ae": 2.0, "dfn": "サイコファング", "dp": "34-40%", "de": 1.0}, {"v": "flat", "atk": "うたかた", "ap": "36-42%", "ae": 1.0, "dfn": "サイコファング", "dp": "58-69%", "de": 1.0}, {"v": "good", "atk": "あくのはどう", "ap": "88-104%", "ae": 2.0, "dfn": "じしん", "dp": "43-52%", "de": 1.0}, {"v": "good", "atk": "シャドーボール", "ap": "112-132%", "ae": 2.0, "dfn": "じしん", "dp": "75-88%", "de": 2.0}], [{"v": "good", "atk": "10まんボルト", "ap": "71-84%", "ae": 2.0, "dfn": "オーバーヒート", "dp": "31-37%", "de": 0.5}, {"v": "bad", "atk": "バレットパンチ", "ap": "21-25%", "ae": 0.5, "dfn": "オーバーヒート", "dp": "293-345%", "de": 4.0}, {"v": "flat", "atk": "じしん", "ap": "0-0%", "ae": 0.0, "dfn": "ソーラービーム", "dp": "65-77%", "de": 2.0}, {"v": "good", "atk": "うたかた", "ap": "69-81%", "ae": 2.0, "dfn": "ソーラービーム", "dp": "75-88%", "de": 2.0}, {"v": "good", "atk": "りゅうせいぐん", "ap": "69-81%", "ae": 1.0, "dfn": "オーバーヒート", "dp": "41-49%", "de": 0.5}, {"v": "ok", "atk": "シャドーボール", "ap": "55-65%", "ae": 1.0, "dfn": "オーバーヒート", "dp": "148-174%", "de": 2.0}], [{"v": "good", "atk": "かえんほうしゃ", "ap": "66-79%", "ae": 2.0, "dfn": "ブレイブバード", "dp": "32-38%", "de": 1.0}, {"v": "flat", "atk": "バレットパンチ", "ap": "9-11%", "ae": 0.5, "dfn": "ブレイブバード", "dp": "22-25%", "de": 1.0}, {"v": "flat", "atk": "じしん", "ap": "0-0%", "ae": 0.0, "dfn": "ブレイブバード", "dp": "24-29%", "de": 1.0}, {"v": "flat", "atk": "うたかた", "ap": "32-38%", "ae": 1.0, "dfn": "ブレイブバード", "dp": "42-49%", "de": 1.0}, {"v": "good", "atk": "かえんほうしゃ", "ap": "60-71%", "ae": 2.0, "dfn": "ブレイブバード", "dp": "39-46%", "de": 1.0}, {"v": "good", "atk": "シャドーボール", "ap": "52-61%", "ae": 1.0, "dfn": "ブレイブバード", "dp": "16-20%", "de": 0.5}], [{"v": "good", "atk": "かえんほうしゃ", "ap": "163-192%", "ae": 4.0, "dfn": "バレットパンチ", "dp": "25-30%", "de": 1.0}, {"v": "flat", "atk": "とんぼがえり", "ap": "14-16%", "ae": 0.5, "dfn": "インファイト", "dp": "22-26%", "de": 1.0}, {"v": "flat", "atk": "じしん", "ap": "28-33%", "ae": 1.0, "dfn": "インファイト", "dp": "25-29%", "de": 1.0}, {"v": "flat", "atk": "うたかた", "ap": "40-47%", "ae": 1.0, "dfn": "バレットパンチ", "dp": "32-38%", "de": 1.0}, {"v": "good", "atk": "かえんほうしゃ", "ap": "147-174%", "ae": 4.0, "dfn": "インファイト", "dp": "81-95%", "de": 2.0}, {"v": "good", "atk": "シャドーボール", "ap": "63-74%", "ae": 1.0, "dfn": "バレットパンチ", "dp": "12-15%", "de": 0.5}], [{"v": "good", "atk": "10まんボルト", "ap": "79-93%", "ae": 2.0, "dfn": "おはかまいり", "dp": "40-48%", "de": 1.0}, {"v": "flat", "atk": "とんぼがえり", "ap": "18-22%", "ae": 0.5, "dfn": "ウェーブタックル", "dp": "36-42%", "de": 1.0}, {"v": "flat", "atk": "じしん", "ap": "37-44%", "ae": 1.0, "dfn": "ウェーブタックル", "dp": "81-95%", "de": 2.0}, {"v": "flat", "atk": "ムーンフォース", "ap": "45-53%", "ae": 1.0, "dfn": "おはかまいり", "dp": "51-61%", "de": 1.0}, {"v": "good", "atk": "あくのはどう", "ap": "93-110%", "ae": 2.0, "dfn": "ウェーブタックル", "dp": "33-39%", "de": 0.5}, {"v": "good", "atk": "シャドーボール", "ap": "121-143%", "ae": 2.0, "dfn": "おはかまいり", "dp": "84-99%", "de": 2.0}], [{"v": "good", "atk": "りゅうのはどう", "ap": "76-90%", "ae": 1.0, "dfn": "でんじほう", "dp": "59-70%", "de": 1.0}, {"v": "good", "atk": "とんぼがえり", "ap": "72-86%", "ae": 1.0, "dfn": "でんじほう", "dp": "67-80%", "de": 1.0}, {"v": "good", "atk": "じしん", "ap": "145-172%", "ae": 2.0, "dfn": "サイコキネシス", "dp": "24-29%", "de": 1.0}, {"v": "ok", "atk": "ムーンフォース", "ap": "62-73%", "ae": 1.0, "dfn": "でんじほう", "dp": "114-134%", "de": 2.0}, {"v": "good", "atk": "りゅうせいぐん", "ap": "104-123%", "ae": 1.0, "dfn": "でんじほう", "dp": "38-45%", "de": 0.5}, {"v": "good", "atk": "シャドーボール", "ap": "83-97%", "ae": 1.0, "dfn": "でんじほう", "dp": "68-80%", "de": 1.0}], [{"v": "ok", "atk": "10まんボルト", "ap": "109-129%", "ae": 2.0, "dfn": "れいとうビーム", "dp": "89-105%", "de": 4.0}, {"v": "good", "atk": "とんぼがえり", "ap": "115-136%", "ae": 2.0, "dfn": "ハイドロポンプ", "dp": "45-54%", "de": 1.0}, {"v": "good", "atk": "じしん", "ap": "57-68%", "ae": 1.0, "dfn": "ハイドロポンプ", "dp": "66-79%", "de": 2.0}, {"v": "good", "atk": "ムーンフォース", "ap": "127-151%", "ae": 2.0, "dfn": "ハイドロポンプ", "dp": "18-22%", "de": 0.5}, {"v": "good", "atk": "りゅうせいぐん", "ap": "106-125%", "ae": 1.0, "dfn": "れいとうビーム", "dp": "56-67%", "de": 2.0}, {"v": "good", "atk": "ゴールドラッシュ", "ap": "62-74%", "ae": 0.5, "dfn": "あくのはどう", "dp": "68-80%", "de": 2.0}], [{"v": "good", "atk": "りゅうのはどう", "ap": "66-79%", "ae": 1.0, "dfn": "シャドーボール", "dp": "56-67%", "de": 1.0}, {"v": "flat", "atk": "バレットパンチ", "ap": "47-55%", "ae": 1.0, "dfn": "シャドーボール", "dp": "64-76%", "de": 1.0}, {"v": "good", "atk": "じしん", "ap": "109-129%", "ae": 2.0, "dfn": "シャドーボール", "dp": "47-56%", "de": 1.0}, {"v": "bad", "atk": "うたかた", "ap": "46-55%", "ae": 1.0, "dfn": "ヘドロばくだん", "dp": "89-105%", "de": 2.0}, {"v": "good", "atk": "あくのはどう", "ap": "113-133%", "ae": 2.0, "dfn": "ヘドロばくだん", "dp": "60-71%", "de": 1.0}, {"v": "ok", "atk": "シャドーボール", "ap": "145-172%", "ae": 2.0, "dfn": "シャドーボール", "dp": "131-155%", "de": 2.0}], [{"v": "good", "atk": "10まんボルト", "ap": "88-104%", "ae": 2.0, "dfn": "ひけん・ちえなみ", "dp": "37-44%", "de": 1.0}, {"v": "good", "atk": "とんぼがえり", "ap": "82-97%", "ae": 2.0, "dfn": "ひけん・ちえなみ", "dp": "25-30%", "de": 1.0}, {"v": "flat", "atk": "じしん", "ap": "40-48%", "ae": 1.0, "dfn": "ひけん・ちえなみ", "dp": "28-33%", "de": 1.0}, {"v": "good", "atk": "ムーンフォース", "ap": "103-122%", "ae": 2.0, "dfn": "ひけん・ちえなみ", "dp": "24-28%", "de": 0.5}, {"v": "good", "atk": "りゅうせいぐん", "ap": "86-101%", "ae": 1.0, "dfn": "せいなるつるぎ", "dp": "65-76%", "de": 2.0}, {"v": "good", "atk": "ゴールドラッシュ", "ap": "50-60%", "ae": 0.5, "dfn": "ひけん・ちえなみ", "dp": "78-93%", "de": 2.0}], [{"v": "good", "atk": "かえんほうしゃ", "ap": "55-65%", "ae": 2.0, "dfn": "ポルターガイスト", "dp": "31-37%", "de": 1.0}, {"v": "flat", "atk": "バレットパンチ", "ap": "11-14%", "ae": 0.5, "dfn": "ポルターガイスト", "dp": "21-25%", "de": 1.0}, {"v": "good", "atk": "じしん", "ap": "57-68%", "ae": 2.0, "dfn": "ポルターガイスト", "dp": "23-27%", "de": 1.0}, {"v": "flat", "atk": "うたかた", "ap": "26-32%", "ae": 1.0, "dfn": "ポルターガイスト", "dp": "39-47%", "de": 1.0}, {"v": "good", "atk": "あくのはどう", "ap": "67-79%", "ae": 2.0, "dfn": "ポルターガイスト", "dp": "18-22%", "de": 0.5}, {"v": "good", "atk": "シャドーボール", "ap": "86-102%", "ae": 2.0, "dfn": "ポルターガイスト", "dp": "65-77%", "de": 2.0}], [{"v": "good", "atk": "かえんほうしゃ", "ap": "77-90%", "ae": 2.0, "dfn": "ドゲザン", "dp": "43-52%", "de": 1.0}, {"v": "flat", "atk": "とんぼがえり", "ap": "29-34%", "ae": 1.0, "dfn": "ドゲザン", "dp": "28-34%", "de": 1.0}, {"v": "good", "atk": "じしん", "ap": "59-69%", "ae": 2.0, "dfn": "ドゲザン", "dp": "33-39%", "de": 1.0}, {"v": "flat", "atk": "ムーンフォース", "ap": "44-52%", "ae": 1.0, "dfn": "アイアンヘッド", "dp": "52-62%", "de": 1.0}, {"v": "good", "atk": "かえんほうしゃ", "ap": "69-81%", "ae": 2.0, "dfn": "アイアンヘッド", "dp": "50-59%", "de": 1.0}, {"v": "bad", "atk": "ゴールドラッシュ", "ap": "43-51%", "ae": 0.5, "dfn": "ドゲザン", "dp": "91-107%", "de": 2.0}], [{"v": "flat", "atk": "りゅうのはどう", "ap": "34-40%", "ae": 1.0, "dfn": "イカサマ", "dp": "17-21%", "de": 1.0}, {"v": "flat", "atk": "とんぼがえり", "ap": "42-50%", "ae": 2.0, "dfn": "イカサマ", "dp": "11-14%", "de": 1.0}, {"v": "flat", "atk": "じしん", "ap": "21-25%", "ae": 1.0, "dfn": "イカサマ", "dp": "13-15%", "de": 1.0}, {"v": "good", "atk": "ムーンフォース", "ap": "55-66%", "ae": 2.0, "dfn": "イカサマ", "dp": "10-12%", "de": 0.5}, {"v": "flat", "atk": "りゅうせいぐん", "ap": "47-55%", "ae": 1.0, "dfn": "イカサマ", "dp": "10-12%", "de": 0.5}, {"v": "good", "atk": "ゴールドラッシュ", "ap": "55-65%", "ae": 1.0, "dfn": "イカサマ", "dp": "37-44%", "de": 2.0}], [{"v": "flat", "atk": "かえんほうしゃ", "ap": "24-28%", "ae": 1.0, "dfn": "ハイパーボイス", "dp": "67-79%", "de": 2.0}, {"v": "good", "atk": "バレットパンチ", "ap": "50-59%", "ae": 2.0, "dfn": "ハイパーボイス", "dp": "18-22%", "de": 0.5}, {"v": "flat", "atk": "じしん", "ap": "29-34%", "ae": 1.0, "dfn": "ハイパーボイス", "dp": "27-32%", "de": 1.0}, {"v": "flat", "atk": "ムーンフォース", "ap": "27-33%", "ae": 1.0, "dfn": "ハイパーボイス", "dp": "31-37%", "de": 1.0}, {"v": "bad", "atk": "かえんほうしゃ", "ap": "21-25%", "ae": 1.0, "dfn": "ハイパーボイス", "dp": "174-205%", "de": 4.0}, {"v": "good", "atk": "ゴールドラッシュ", "ap": "111-132%", "ae": 2.0, "dfn": "ハイパーボイス", "dp": "18-22%", "de": 0.5}]]};
+const GLYPH = {good:"◎", ok:"○", flat:"△", bad:"×"};
+
+// ---- matrix ----
+(function(){
+  const t = document.getElementById("mx");
+  let h = "<tr><th class='foe'>相手 ↓ ／ 自分 →</th>";
+  DATA.mine.forEach(m => h += "<th style='text-align:center'>" + m.name.replace("メガ","M") + "</th>");
+  h += "</tr>";
+  DATA.foes.forEach((f, i) => {
+    h += "<tr><th class='foe'>" + f.name + "</th>";
+    DATA.cells[i].forEach((c, j) => {
+      const d = [f.name, DATA.mine[j].name, c.atk, c.ap, c.ae, c.dfn, c.dp, c.de].join("|");
+      h += "<td class='c' data-d=\"" + d + "\"><span class='m " + c.v + "'>" + GLYPH[c.v] + "</span></td>";
+    });
+    h += "</tr>";
+  });
+  t.innerHTML = h;
+})();
+
+// ---- hover tooltip ----
+(function(){
+  const tt = document.getElementById("tt");
+  function show(e, el){
+    const p = el.getAttribute("data-d").split("|");
+    tt.innerHTML = "<b>" + p[1] + " vs " + p[0] + "</b>"
+      + "<span class='a'>与 " + p[2] + " " + p[3] + " (×" + p[4] + ")</span><br>"
+      + "<span class='d'>被 " + p[5] + " " + p[6] + " (×" + p[7] + ")</span>";
+    tt.style.opacity = 1;
+    const x = (e.touches ? e.touches[0].clientX : e.clientX);
+    const y = (e.touches ? e.touches[0].clientY : e.clientY);
+    tt.style.left = Math.min(x + 12, innerWidth - 245) + "px";
+    tt.style.top  = Math.max(y - 62, 8) + "px";
+  }
+  document.addEventListener("mouseover", e => { const c = e.target.closest("td.c"); if(c) show(e, c); });
+  document.addEventListener("mousemove", e => { const c = e.target.closest("td.c"); if(c) show(e, c); });
+  document.addEventListener("mouseout",  e => { if(e.target.closest("td.c")) tt.style.opacity = 0; });
+  document.addEventListener("touchstart",e => { const c = e.target.closest("td.c"); if(c) show(e, c); }, {passive:true});
+})();
+
+// ---- speed tiers ----
+(function(){
+  const S = [
+    [319,"最速ドラパルト＠スカーフ（天井）",0],[288,"マスカーニャ最速＠スカーフ",0],
+    [262,"マスカーニャ準速＠スカーフ",0],[253,"ガブリアス最速（スケショ+1込）",0],
+    [250,"最速100族の積み後＝100族スカーフ同値",0],[219,"メガギャラドス 竜舞1積み後",0],
+    [217,"メガカイリュー 竜舞1積み後",0],[179,"メガミミロップ",0],[169,"ガブリアス最速",0],
+    [167,"無補正 最速100族",0],[154,"ガブリアス準速",0],
+    [152,"メガカイリュー（自分）",1],[150,"サザンドラ＠スカーフ（自分）",1],
+    [121,"サーフゴー（自分）",1],[105,"ブリジュラス",0],[103,"アシレーヌ（自分）",1],
+    [95,"メガハッサム（自分）",1],[67,"カバルドン（自分）",1]
+  ];
+  const max = 319;
+  document.getElementById("spd").innerHTML = S.map(function(r){
+    return "<div class='row" + (r[2] ? " me" : "") + "'><span class='v'>" + r[0] + "</span>"
+      + "<span class='bar' style='width:" + Math.round(r[0]/max*46) + "%'></span>"
+      + "<span class='t'>" + r[1] + "</span></div>";
+  }).join("");
+})();
+</script>
+</body>
+</html>
