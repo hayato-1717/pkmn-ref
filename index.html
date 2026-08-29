@@ -172,6 +172,8 @@
   <div class="tile"><div class="n">22</div><div class="l">検証した環境脅威</div></div>
   <div class="tile"><div class="n">16</div><div class="l">サーフゴーの守備範囲（最広）</div></div>
   <div class="tile"><div class="n" id="record">–</div><div class="l">対戦成績（記録分）</div></div>
+  <div class="tile"><div class="n" id="cov">–</div><div class="l">環境カバー率（種類）</div></div>
+  <div class="tile"><div class="n" id="covw">–</div><div class="l">同・出現数で重み付け</div></div>
 </div>
 
 <h2>1. パーティ</h2>
@@ -449,6 +451,14 @@ document.getElementById("roster").innerHTML = PARTY.map(p =>
     });
   });
   document.getElementById("consist").innerHTML = h + "</table>";
+})();
+// カバー率（「完成した気」にならないための数字）
+(function(){
+  const C = {"species": 53, "species_total": 185, "pct": 28, "weighted_pct": 89, "detail": 42};
+  document.getElementById("cov").innerHTML = C.pct
+    + "<span style='font-size:14px;color:var(--muted)'>% ("+C.species+"/"+C.species_total+")</span>";
+  document.getElementById("covw").innerHTML = C.weighted_pct
+    + "<span style='font-size:14px;color:var(--muted)'>%</span>";
 })();
 </script>
 </body>
