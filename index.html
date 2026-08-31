@@ -240,10 +240,11 @@
   mark{background:var(--warn-bg);color:var(--ink);border-radius:3px;padding:0 2px;font-weight:700}
 
   /* ---------- 徹底版 追加分（2026-08-31）---------- */
-  .navbar .tools{display:flex;gap:6px;align-items:center;margin-left:auto}
-  .navbar .tools button{font-family:inherit;font-size:11px;color:var(--ink2);background:var(--surface);
-       border:1px solid var(--border);border-radius:8px;padding:4px 9px;cursor:pointer;white-space:nowrap}
-  .navbar .tools button:hover{color:var(--ink);border-color:var(--gold)}
+  .toc .tools{flex:0 0 auto;display:flex;gap:6px;padding-left:8px;margin-left:4px;
+       border-left:1px solid var(--border)}
+  .toc .tools button{font-family:inherit;font-size:11px;color:var(--ink2);background:var(--surface);
+       border:1px solid var(--border);border-radius:20px;padding:4px 10px;cursor:pointer;white-space:nowrap}
+  .toc .tools button:hover{color:var(--ink);border-color:var(--gold)}
   .noresult b{color:var(--ink);display:block;margin-bottom:6px}
   .noresult .sg{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:10px}
   .noresult .sg button{font-family:inherit;font-size:11.5px;color:var(--good);background:var(--good-bg);
@@ -494,7 +495,10 @@ document.getElementById("roster").innerHTML = PARTY.map(p =>
   document.addEventListener("mouseover", e=>{const c=e.target.closest("td.c"); if(c) show(e,c);});
   document.addEventListener("mousemove", e=>{const c=e.target.closest("td.c"); if(c) show(e,c);});
   document.addEventListener("mouseout",  e=>{if(e.target.closest("td.c")) tt.style.opacity=0;});
-  document.addEventListener("touchstart",e=>{const c=e.target.closest("td.c"); if(c) show(e,c);}, {passive:true});
+  document.addEventListener("touchstart",e=>{const c=e.target.closest("td.c"); if(c) show(e,c); else tt.style.opacity=0;}, {passive:true});
+  // タップで出したままにしない。指を離す/スクロールで消す。
+  document.addEventListener("touchend",  ()=>{ setTimeout(()=>{ tt.style.opacity=0; }, 1600); }, {passive:true});
+  document.addEventListener("scroll",    ()=>{ tt.style.opacity=0; }, {passive:true, capture:true});
 })();
 
 // counters
@@ -880,10 +884,10 @@ if ("serviceWorker" in navigator && location.protocol === "https:") {
   });
 
   // 全開閉
-  const tools = document.createElement("div");
+  const tools = document.createElement("span");
   tools.className = "tools";
   tools.innerHTML = "<button id='allc'>全部畳む</button><button id='allo'>全部開く</button>";
-  document.querySelector(".navbar .qw").appendChild(tools);
+  toc.appendChild(tools);   // 目次チップ列の末尾。横スクロール行なので縦を消費しない
   const setAll = c => {
     closed = c ? new Set(h2s.map((_, i) => i)) : new Set();
     try { localStorage.setItem(KEY, JSON.stringify([...closed])); } catch (e) {}

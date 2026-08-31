@@ -1,5 +1,5 @@
 // 自動生成（build.py）。手で編集しない。
-const V = "pkmn-0fb7c305540b";
+const V = "pkmn-fbefd681042e";
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", e => {
   e.waitUntil(caches.keys().then(ks =>
