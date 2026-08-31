@@ -31,6 +31,7 @@
     }
   }
   *{box-sizing:border-box}
+  [hidden]{display:none!important}  /* .stats{display:flex} が hidden 属性に勝ってしまうため */
   body{margin:0;background:var(--page);color:var(--ink);
     font-family:"Zen Kaku Gothic New","Hiragino Sans","Yu Gothic UI",system-ui,-apple-system,sans-serif;
     line-height:1.6;-webkit-text-size-adjust:100%}
@@ -89,6 +90,8 @@
 
   /* ---------- matrix ---------- */
   table.mx{font-size:12px;min-width:660px}
+  /* .scroll 内の表は最小幅を与える。与えないと備考列が潰れて1行が10行に折り返す */
+  #keylines table,#consist table{min-width:640px}
   table.mx th.top{text-align:center;padding:6px 2px}
   table.mx th.top img{width:34px;height:34px;margin:0 auto;object-fit:contain}
   table.mx th.top span{display:block;font-size:9px;color:var(--muted);margin-top:1px}
@@ -199,6 +202,42 @@
   .trk .seq .w{background:var(--good)}
   .trk .seq .l{background:var(--crit);opacity:.7}
   .trk .hint{font-size:11.5px;color:var(--muted);margin-top:9px;line-height:1.6}
+
+  /* ---------- 追従バー：目次 + 絞り込み（2026-08-31）----------
+     用途は「対戦中に開くカンペ」。11,699px を頭から読む前提が間違いなので、
+     ①どこにでも飛べる ②相手名で全セクションを一気に絞る の2つを常時出す。 */
+  .navbar{position:sticky;top:0;z-index:60;margin:0 -14px 6px;padding:9px 14px 8px;
+       background:color-mix(in srgb, var(--page) 88%, transparent);
+       backdrop-filter:saturate(150%) blur(8px);border-bottom:1px solid var(--border)}
+  .navbar .qw{display:flex;align-items:center;gap:8px}
+  .navbar input{flex:1;min-width:0;font-family:inherit;font-size:13px;color:var(--ink);
+       background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:8px 11px}
+  .navbar input::placeholder{color:var(--muted)}
+  .navbar input:focus{outline:none;border-color:var(--good)}
+  .navbar .qn{font-size:11px;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+  .navbar .clr{flex:0 0 auto;font-size:11px;color:var(--ink2);background:var(--surface);cursor:pointer;
+       border:1px solid var(--border);border-radius:8px;padding:6px 10px}
+  .navbar .clr:hover{border-color:var(--crit);color:var(--crit)}
+  .toc{display:flex;gap:6px;overflow-x:auto;margin-top:8px;scrollbar-width:none}
+  .toc::-webkit-scrollbar{display:none}
+  .toc a{flex:0 0 auto;font-size:11px;color:var(--muted);text-decoration:none;white-space:nowrap;
+       padding:4px 10px;border-radius:20px;border:1px solid var(--border);background:var(--surface)}
+  .toc a:hover{color:var(--ink)}
+  .toc a.on{color:var(--good);border-color:var(--good);background:var(--good-bg);font-weight:700}
+
+  /* ---------- セクション折りたたみ ---------- */
+  h2.fold{cursor:pointer;display:flex;align-items:center;gap:8px}
+  h2.fold .cv{margin-left:auto;font-size:10.5px;font-weight:400;color:var(--muted);
+       display:flex;align-items:center;gap:6px}
+  h2.fold .cv i{font-style:normal;transition:transform .15s;display:inline-block}
+  h2.fold.closed .cv i{transform:rotate(-90deg)}
+  .sec.closed{display:none}
+  .sec.nohit{display:none}
+  h2.nohit{display:none}
+  .noresult{background:var(--surface);border:1px solid var(--border);border-radius:12px;
+       padding:18px;text-align:center;color:var(--muted);font-size:12.5px;margin:14px 0}
+  .hit{cursor:pointer}
+  mark{background:var(--warn-bg);color:var(--ink);border-radius:3px;padding:0 2px;font-weight:700}
 </style>
 </head>
 <body>
@@ -208,6 +247,15 @@
   <h1>対戦リファレンス</h1>
   <p class="sub">M-5環境 / 全数値 pkmn_matrix.py 計算・回帰テスト7/7一致 / 2026-08-28</p>
   <div class="team" id="team"></div>
+</div>
+
+<div class="navbar">
+  <div class="qw">
+    <input id="q" type="search" autocomplete="off" placeholder="相手の名前で全セクションを絞り込む（例: ミロカロス）">
+    <span class="qn" id="qn"></span>
+    <button class="clr" id="qc" hidden>解除</button>
+  </div>
+  <nav class="toc" id="toc"></nav>
 </div>
 
 <div id="alert"></div>
@@ -345,7 +393,13 @@ const DEX = {
   "メガメタグロス":10076,"メガリザードンY":10035,"アーマーガア":823,"ハッサム":212,
   "イダイトウ":902,"メガライチュウY":26,"ゲッコウガ":658,"メガゲンガー":10038,
   "ヒスイダイケンキ":10236,"ギルガルド":681,"ドドゲザン":983,"ブラッキー":197,
-  "ニンフィア":700,"ウルガモス":637,"メガミミロップ":10088
+  "ニンフィア":700,"ウルガモス":637,"メガミミロップ":10088,
+  "キラフロル":970,"ハラバリー":939,"ラウドボーン":911,"スコヴィラン":952,"オーロンゲ":861,
+  "カイリュー":149,"キュウコン":38,"アローラキュウコン":10104,"フラエッテ":670,"ドヒドイデ":748,
+  "ペリッパー":279,"ドラミドロ":691,"ウォッシュロトム":10009,"ソウブレイズ":937,
+  "メガチャーレム":10054,"メガフシギバナ":10033,"メガリザードンX":10034,"メガスターミー":10280,
+  "メガムクホーク":10308,"メガクチート":10052,"メガピクシー":10278,"メガカメックス":10036,
+  "メガラグラージ":10064,"メガヤドラン":10071
 };
 const TC = {"ノーマル":"#9FA19F","ほのお":"#E62829","みず":"#2980EF","くさ":"#3FA129",
   "でんき":"#FAC000","こおり":"#3DCEF3","かくとう":"#FF8000","どく":"#9141CB",
@@ -353,7 +407,9 @@ const TC = {"ノーマル":"#9FA19F","ほのお":"#E62829","みず":"#2980EF","�
   "いわ":"#AFA981","ゴースト":"#704170","ドラゴン":"#5060E1","あく":"#624D4E",
   "はがね":"#60A1B8","フェアリー":"#EF70EF"};
 
-const clean = n => n.replace(/^\d+\s*/,"").replace("(非メガ)","").trim();
+// 表示用の飾り（順位の数字 / ★ / 「実戦遭遇 」等）を落として辞書引き可能な名前にする
+const clean = n => n.replace(/^\d+\s*/,"").replace(/^実戦遭遇\s*/,"")
+                    .replace("(非メガ)","").replace(/[★☆]+$/,"").trim();
 const dex   = n => DEX[clean(n)] || 0;
 function ink(hex){ // 背景の明度で文字色を決める（コントラスト確保）
   const r=parseInt(hex.substr(1,2),16),g=parseInt(hex.substr(3,2),16),b=parseInt(hex.substr(5,2),16);
@@ -552,7 +608,8 @@ document.getElementById("roster").innerHTML = PARTY.map(p =>
   let h = "<table><tr><th>駒</th><th>技</th><th>無効にする相手（×0）</th><th>半減する相手（×0.5以下）</th></tr>";
   Object.keys(by).forEach(function(mon){
     by[mon].forEach(function(c, i){
-      h += "<tr>" + (i===0 ? "<td rowspan='"+by[mon].length+"' style='white-space:nowrap'>"+img(mon)+"<b style='font-size:11.5px'>"+mon.replace("メガ","M")+"</b></td>" : "")
+      // rowspan を使わない：1行だけ表示したいとき（絞り込み）に行が引き伸ばされるため
+      h += "<tr><td style='white-space:nowrap'>"+img(mon)+"<b style='font-size:11.5px'>"+mon.replace("メガ","M")+"</b></td>"
         + "<td style='white-space:nowrap'><b>"+c.move+"</b><br><span style='font-size:10px;color:var(--muted)'>"+c.type+"</span></td>"
         + "<td style='font-size:11px;color:var(--crit)'>"+(c.zero.length?c.zero.join("、"):"<span style='color:var(--good)'>なし＝常に一貫</span>")+"</td>"
         + "<td style='font-size:11px;color:var(--muted)'>"+(c.half.length?c.half.join("、"):"—")+"</td></tr>";
@@ -567,6 +624,171 @@ document.getElementById("roster").innerHTML = PARTY.map(p =>
     + "<span style='font-size:14px;color:var(--muted)'>% ("+C.species+"/"+C.species_total+")</span>";
   document.getElementById("covw").innerHTML = C.weighted_pct
     + "<span style='font-size:14px;color:var(--muted)'>%</span>";
+})();
+
+// ---------- 目次・折りたたみ・絞り込み（2026-08-31）----------
+//   このページは 11,700px ある。頭から読む前提が用途（対戦中のカンペ）と合っていないので、
+//   「飛べる」「畳める」「相手名で全セクションを一気に絞れる」を常設する。
+(function(){
+  const wrap = document.querySelector(".wrap");
+  const h2s  = [...wrap.querySelectorAll("h2")];
+
+  // 1) h2 の次から次の h2 手前までを section にまとめる（畳む単位を作る）
+  const secs = h2s.map(h => {
+    const sec = document.createElement("div");
+    sec.className = "sec";
+    let n = h.nextSibling;
+    while (n && !(n.nodeType === 1 && n.tagName === "H2")) { const x = n; n = n.nextSibling; sec.appendChild(x); }
+    h.after(sec);
+    return sec;
+  });
+
+  // 2) 目次チップ
+  const toc = document.getElementById("toc");
+  h2s.forEach((h, i) => {
+    if (!h.id) h.id = "s" + i;
+    const a = document.createElement("a");
+    a.href = "#" + h.id;
+    a.textContent = h.textContent.replace(/^\d+\.\s*/, "").replace(/（.*?）/g, "");
+    a.dataset.i = i;
+    toc.appendChild(a);
+  });
+  const chips = [...toc.querySelectorAll("a")];
+
+  // 3) 折りたたみ（状態は端末に保存。次に開いたとき同じ形で出る）
+  const KEY = "pkmn.closed";
+  let closed = new Set();
+  try { closed = new Set(JSON.parse(localStorage.getItem(KEY) || "[]")); } catch (e) {}
+  h2s.forEach((h, i) => {
+    h.classList.add("fold");
+    const cv = document.createElement("span");
+    cv.className = "cv";
+    cv.innerHTML = "<span>折りたたむ</span><i>▾</i>";
+    h.appendChild(cv);
+    const apply = () => {
+      const c = closed.has(i);
+      h.classList.toggle("closed", c);
+      secs[i].classList.toggle("closed", c);
+      cv.firstChild.textContent = c ? "開く" : "折りたたむ";
+    };
+    h.addEventListener("click", () => {
+      if (closed.has(i)) closed.delete(i); else closed.add(i);
+      try { localStorage.setItem(KEY, JSON.stringify([...closed])); } catch (e) {}
+      apply();
+    });
+    apply();
+  });
+
+  // 4) 現在地ハイライト
+  if ("IntersectionObserver" in window) {
+    const io = new IntersectionObserver(es => {
+      es.forEach(e => {
+        if (!e.isIntersecting) return;
+        const i = h2s.indexOf(e.target);
+        chips.forEach(c => c.classList.toggle("on", +c.dataset.i === i));
+      });
+    }, { rootMargin: "-72px 0px -75% 0px" });
+    h2s.forEach(h => io.observe(h));
+  }
+
+  // 5) 絞り込み：全セクションの「行」を相手名で filter する
+  //    行の単位はセクションによって表/リストが混ざるので、実際に使っている
+  //    3種（table tr / .ctr / .row）をまとめて行として扱う。
+  // 行の単位を作る。rowspan のある表は「rowspanグループ」を1単位にする
+  //   （個別に tr を隠すと、残った行が rowspan セルの高さまで引き伸ばされて 2000px になる）
+  function groupsOf(sec){
+    const gs = [];
+    sec.querySelectorAll("table").forEach(t => {
+      let cur = null, left = 0;
+      [...t.rows].forEach(tr => {
+        const head = tr.querySelector("th.top") || (tr.cells.length && ![...tr.cells].some(c => c.tagName === "TD"));
+        if (head) { gs.push({ rows: [tr], always: true }); cur = null; left = 0; return; }
+        const rs = Math.max(0, ...[...tr.cells].map(c => +c.getAttribute("rowspan") || 0));
+        if (left <= 0 || rs) { cur = { rows: [], always: false }; gs.push(cur); left = rs || 1; }
+        cur.rows.push(tr); left--;
+      });
+    });
+    sec.querySelectorAll(".ctr, .row").forEach(e => gs.push({ rows: [e], always: false }));
+    return gs;
+  }
+  const rowsOf = sec => groupsOf(sec);
+  // ヒット箇所をハイライトする。20体の羅列の中から目的の1体を目で探すのは無理があるため。
+  //   元の innerHTML を控えてから書き換え、解除時にそれを戻す（DOMを壊さない）。
+  let marked = [];
+  function clearMarks(){ marked.forEach(x => x[0].innerHTML = x[1]); marked = []; }
+  function markIn(el, v){
+    const targets = (el.matches(".ctr") || el.matches(".row")) ? [el] : [...el.querySelectorAll("td")];
+    targets.forEach(t => {
+      if (!t.innerText.includes(v)) return;
+      marked.push([t, t.innerHTML]);
+      const w = document.createTreeWalker(t, NodeFilter.SHOW_TEXT), ns = [];
+      while (w.nextNode()) if (w.currentNode.nodeValue.includes(v)) ns.push(w.currentNode);
+      ns.forEach(n => {
+        const frag = document.createDocumentFragment();
+        n.nodeValue.split(v).forEach((part, idx) => {
+          if (idx) { const m = document.createElement("mark"); m.textContent = v; frag.appendChild(m); }
+          if (part) frag.appendChild(document.createTextNode(part));
+        });
+        n.replaceWith(frag);
+      });
+    });
+  }
+
+  const q  = document.getElementById("q");
+  const qn = document.getElementById("qn");
+  const qc = document.getElementById("qc");
+
+  function run(){
+    clearMarks();
+    const v = q.value.trim();
+    const on = v.length > 0;
+    qc.hidden = !on;
+    // 絞り込み中は「今日のダッシュボード」を畳む。
+    //   知りたいのは目の前の1体であって、日次サマリではない。
+    //   これが残っていると、スマホで答えに届くまで2画面スクロールする。
+    ["alert", "track"].forEach(id => { const e = document.getElementById(id); if (e) e.hidden = on; });
+    const st = document.querySelector(".stats"); if (st) st.hidden = on;
+    let hits = 0;
+    h2s.forEach((h, i) => {
+      const sec = secs[i];
+      const rows = rowsOf(sec);
+      let secHit = 0;
+      if (!on) {
+        rows.forEach(g => g.rows.forEach(r => r.style.display = ""));
+        sec.classList.remove("nohit"); h.classList.remove("nohit");
+        sec.classList.toggle("closed", closed.has(i));
+        h.classList.toggle("closed", closed.has(i));
+        return;
+      }
+      // 絞り込み中は畳んだ状態を無視して開く（探しているのに隠れているのが最悪）
+      sec.classList.remove("closed"); h.classList.remove("closed");
+      if (rows.length) {
+        rows.forEach(g => {
+          const hit = g.always || g.rows.some(r => r.innerText.includes(v));
+          g.rows.forEach(r => r.style.display = hit ? "" : "none");
+          if (hit && !g.always) { secHit++; g.rows.forEach(r => markIn(r, v)); }
+        });
+      } else {
+        secHit = sec.innerText.includes(v) ? 1 : 0;
+      }
+      hits += secHit;
+      sec.classList.toggle("nohit", secHit === 0);
+      h.classList.toggle("nohit", secHit === 0);
+    });
+    qn.textContent = on ? hits + "件" : "";
+  }
+  q.addEventListener("input", run);
+  qc.addEventListener("click", () => { q.value = ""; run(); q.focus(); });
+
+  // 6) 相手名をタップしたらその相手で絞る（スマホの主動線）
+  document.addEventListener("click", e => {
+    const t = e.target.closest("#mx th.foe .fn, #counters .ctr .who b, #ngbox .ctr .who b");
+    if (!t) return;
+    q.value = t.textContent.trim();
+    run();
+    document.querySelector(".navbar").scrollIntoView({ block: "start" });
+  });
+  document.querySelectorAll("#mx th.foe .fn").forEach(e => e.classList.add("hit"));
 })();
 </script>
 </body>
