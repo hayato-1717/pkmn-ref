@@ -238,6 +238,26 @@
        padding:18px;text-align:center;color:var(--muted);font-size:12.5px;margin:14px 0}
   .hit{cursor:pointer}
   mark{background:var(--warn-bg);color:var(--ink);border-radius:3px;padding:0 2px;font-weight:700}
+
+  /* ---------- 徹底版 追加分（2026-08-31）---------- */
+  .navbar .tools{display:flex;gap:6px;align-items:center;margin-left:auto}
+  .navbar .tools button{font-family:inherit;font-size:11px;color:var(--ink2);background:var(--surface);
+       border:1px solid var(--border);border-radius:8px;padding:4px 9px;cursor:pointer;white-space:nowrap}
+  .navbar .tools button:hover{color:var(--ink);border-color:var(--gold)}
+  .noresult b{color:var(--ink);display:block;margin-bottom:6px}
+  .noresult .sg{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:10px}
+  .noresult .sg button{font-family:inherit;font-size:11.5px;color:var(--good);background:var(--good-bg);
+       border:1px solid var(--good);border-radius:20px;padding:4px 11px;cursor:pointer}
+  /* マトリクスは自前のスクロール箱にする。
+     横スクロール用の overflow だけだと、縦の sticky ヘッダがビューポートに追従できないため。 */
+  .mxbox{max-height:76vh;overflow:auto;border-radius:12px;
+       box-shadow:0 1px 2px rgba(0,0,0,.28), 0 10px 26px -18px rgba(0,0,0,.5)}
+  .mxbox table.mx th.top{position:sticky;top:0;background:var(--surface);z-index:3}
+  .mxbox table.mx tr:first-child th.foe{position:sticky;left:0;top:0;z-index:4}
+  :where(a,button,input,[tabindex]):focus-visible{outline:2px solid var(--good);outline-offset:2px;border-radius:6px}
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:.001ms!important;transition-duration:.001ms!important;scroll-behavior:auto!important}
+  }
 </style>
 </head>
 <body>
@@ -251,12 +271,15 @@
 
 <div class="navbar">
   <div class="qw">
-    <input id="q" type="search" autocomplete="off" placeholder="相手の名前で全セクションを絞り込む（例: ミロカロス）">
+    <input id="q" type="search" autocomplete="off" list="names" aria-label="相手の名前で絞り込む"
+           placeholder="相手の名前で絞り込む（略称可・&quot;/&quot;でここへ）">
+    <datalist id="names"></datalist>
     <span class="qn" id="qn"></span>
     <button class="clr" id="qc" hidden>解除</button>
   </div>
-  <nav class="toc" id="toc"></nav>
+  <nav class="toc" id="toc" aria-label="目次"></nav>
 </div>
+<div class="noresult" id="nores" hidden></div>
 
 <div id="alert"></div>
 <div id="track"></div>
@@ -291,7 +314,7 @@
   <span><i class="sw m bad">×</i>落とされる（出すな）</span>
 </div>
 <p class="note">セルにカーソル／タップで与ダメ・被ダメを表示。◎○△×の記号が意味を持つので色が見えなくても読めます。</p>
-<div class="scroll"><table class="mx" id="mx"></table></div>
+<div class="mxbox"><table class="mx" id="mx"></table></div>
 
 <h2>4. 相手別 対策</h2>
 <div class="box" id="counters"></div>
@@ -626,6 +649,12 @@ document.getElementById("roster").innerHTML = PARTY.map(p =>
     + "<span style='font-size:14px;color:var(--muted)'>%</span>";
 })();
 
+// オフラインでも開けるようにする（対戦中の地下・電車内対策）。
+//   HTMLはネットワーク優先＝古い版が残り続けない。画像はキャッシュ優先＝表示が速い。
+if ("serviceWorker" in navigator && location.protocol === "https:") {
+  addEventListener("load", () => navigator.serviceWorker.register("sw.js").catch(() => {}));
+}
+
 // ---------- 目次・折りたたみ・絞り込み（2026-08-31）----------
 //   このページは 11,700px ある。頭から読む前提が用途（対戦中のカンペ）と合っていないので、
 //   「飛べる」「畳める」「相手名で全セクションを一気に絞れる」を常設する。
@@ -665,16 +694,23 @@ document.getElementById("roster").innerHTML = PARTY.map(p =>
     cv.className = "cv";
     cv.innerHTML = "<span>折りたたむ</span><i>▾</i>";
     h.appendChild(cv);
+    h.setAttribute("role", "button");
+    h.setAttribute("tabindex", "0");
     const apply = () => {
       const c = closed.has(i);
       h.classList.toggle("closed", c);
       secs[i].classList.toggle("closed", c);
       cv.firstChild.textContent = c ? "開く" : "折りたたむ";
+      h.setAttribute("aria-expanded", String(!c));
     };
-    h.addEventListener("click", () => {
+    const toggle = () => {
       if (closed.has(i)) closed.delete(i); else closed.add(i);
       try { localStorage.setItem(KEY, JSON.stringify([...closed])); } catch (e) {}
       apply();
+    };
+    h.addEventListener("click", toggle);
+    h.addEventListener("keydown", e => {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggle(); }
     });
     apply();
   });
@@ -712,22 +748,53 @@ document.getElementById("roster").innerHTML = PARTY.map(p =>
     return gs;
   }
   const rowsOf = sec => groupsOf(sec);
+  // 表記ゆれの吸収：DEX の全名称を辞書に使い、入力を「実際にページに出ている名前」へ展開する。
+  //   「ライチュウ」→ メガライチュウY / 「Mハッサム」→ メガハッサム、のように打てるようにする。
+  //   別名テーブルを手で書くと必ず追従漏れするので、正規化ルールだけで解く。
+  const NAMES = Object.keys(DEX);
+  const norm = x => x.replace(/メガ/g, "M").replace(/[（(].*?[)）]/g, "").toLowerCase();
+  const NORMED = NAMES.map(n => [n, norm(n)]);
+  function expand(v){
+    const nv = norm(v);
+    if (nv.length < 2) return [v];
+    const hit = NORMED.filter(p => p[1].includes(nv) || nv.includes(p[1])).map(p => p[0]);
+    return [...new Set([v, ...hit])];
+  }
+  function suggest(v){
+    const nv = norm(v);
+    const score = n => { let c = 0; for (const ch of new Set(nv)) if (norm(n).includes(ch)) c++; return c; };
+    const sc = NORMED.map(p => p[0]).map(n => [n, score(n)]).filter(x => x[1] > 0)
+                     .sort((a, b) => b[1] - a[1]).slice(0, 6).map(x => x[0]);
+    // 1文字も掠らない入力（打ち間違い・別ゲームの名前）でも空で返さない。
+    // 環境で最も出現数の多い相手を出す＝そこから探し直せる。
+    return sc.length ? sc : DATA.foes.slice(0, 6).map(f => clean(f.name));
+  }
+
   // ヒット箇所をハイライトする。20体の羅列の中から目的の1体を目で探すのは無理があるため。
   //   元の innerHTML を控えてから書き換え、解除時にそれを戻す（DOMを壊さない）。
   let marked = [];
   function clearMarks(){ marked.forEach(x => x[0].innerHTML = x[1]); marked = []; }
-  function markIn(el, v){
+  function markIn(el, cands){
     const targets = (el.matches(".ctr") || el.matches(".row")) ? [el] : [...el.querySelectorAll("td")];
     targets.forEach(t => {
-      if (!t.innerText.includes(v)) return;
+      const txt = t.innerText;
+      const use = cands.filter(c => c && txt.includes(c));
+      if (!use.length) return;
       marked.push([t, t.innerHTML]);
       const w = document.createTreeWalker(t, NodeFilter.SHOW_TEXT), ns = [];
-      while (w.nextNode()) if (w.currentNode.nodeValue.includes(v)) ns.push(w.currentNode);
+      while (w.nextNode()) if (use.some(c => w.currentNode.nodeValue.includes(c))) ns.push(w.currentNode);
       ns.forEach(n => {
+        // 長い候補から先に切る（「ハッサム」で「メガハッサム」を割らないため）
+        const ord = [...use].sort((a, b) => b.length - a.length);
+        let parts = [n.nodeValue];
+        ord.forEach(c => {
+          parts = parts.flatMap(x => typeof x !== "string" ? [x]
+                    : x.split(c).flatMap((seg, i) => i ? [{ m: c }, seg] : [seg]));
+        });
         const frag = document.createDocumentFragment();
-        n.nodeValue.split(v).forEach((part, idx) => {
-          if (idx) { const m = document.createElement("mark"); m.textContent = v; frag.appendChild(m); }
-          if (part) frag.appendChild(document.createTextNode(part));
+        parts.forEach(x => {
+          if (typeof x === "string") { if (x) frag.appendChild(document.createTextNode(x)); }
+          else { const m = document.createElement("mark"); m.textContent = x.m; frag.appendChild(m); }
         });
         n.replaceWith(frag);
       });
@@ -738,10 +805,11 @@ document.getElementById("roster").innerHTML = PARTY.map(p =>
   const qn = document.getElementById("qn");
   const qc = document.getElementById("qc");
 
-  function run(){
+  function run(push){
     clearMarks();
     const v = q.value.trim();
     const on = v.length > 0;
+    const cands = on ? expand(v) : [];
     qc.hidden = !on;
     // 絞り込み中は「今日のダッシュボード」を畳む。
     //   知りたいのは目の前の1体であって、日次サマリではない。
@@ -764,21 +832,75 @@ document.getElementById("roster").innerHTML = PARTY.map(p =>
       sec.classList.remove("closed"); h.classList.remove("closed");
       if (rows.length) {
         rows.forEach(g => {
-          const hit = g.always || g.rows.some(r => r.innerText.includes(v));
+          const hit = g.always || g.rows.some(r => cands.some(c => r.innerText.includes(c)));
           g.rows.forEach(r => r.style.display = hit ? "" : "none");
-          if (hit && !g.always) { secHit++; g.rows.forEach(r => markIn(r, v)); }
+          if (hit && !g.always) { secHit++; g.rows.forEach(r => markIn(r, cands)); }
         });
       } else {
-        secHit = sec.innerText.includes(v) ? 1 : 0;
+        secHit = cands.some(c => sec.innerText.includes(c)) ? 1 : 0;
       }
       hits += secHit;
       sec.classList.toggle("nohit", secHit === 0);
       h.classList.toggle("nohit", secHit === 0);
     });
     qn.textContent = on ? hits + "件" : "";
+
+    // ヒット0を黙って空白にしない。何を打てばいいかを出す。
+    const nr = document.getElementById("nores");
+    if (on && hits === 0) {
+      const sg = suggest(v);
+      nr.innerHTML = "<b>「" + v + "」に一致する行はありません</b>"
+        + "<div>相手・自分・技名のいずれかで探せます。</div>"
+        + (sg.length ? "<div class='sg'>" + sg.map(n => "<button data-n=\"" + n + "\">" + n + "</button>").join("") + "</div>" : "");
+      nr.hidden = false;
+    } else { nr.hidden = true; }
+
+    // URL に反映しておく（特定の相手のページをブックマークできる）
+    if (push !== false) {
+      const u = new URL(location.href);
+      if (on) u.searchParams.set("q", v); else u.searchParams.delete("q");
+      history.replaceState(null, "", u);
+    }
   }
-  q.addEventListener("input", run);
+  q.addEventListener("input", () => run());
   qc.addEventListener("click", () => { q.value = ""; run(); q.focus(); });
+  document.getElementById("nores").addEventListener("click", e => {
+    const b = e.target.closest("button[data-n]"); if (!b) return;
+    q.value = b.dataset.n; run();
+  });
+
+  // サジェスト（スマホのIMEに候補を出す）
+  const dl = document.getElementById("names");
+  dl.innerHTML = NAMES.map(n => "<option value=\"" + n + "\"></option>").join("");
+
+  // キーボード: "/" で検索へ、Esc で解除
+  document.addEventListener("keydown", e => {
+    if (e.key === "/" && document.activeElement !== q) { e.preventDefault(); q.focus(); q.select(); }
+    else if (e.key === "Escape" && q.value) { q.value = ""; run(); }
+  });
+
+  // 全開閉
+  const tools = document.createElement("div");
+  tools.className = "tools";
+  tools.innerHTML = "<button id='allc'>全部畳む</button><button id='allo'>全部開く</button>";
+  document.querySelector(".navbar .qw").appendChild(tools);
+  const setAll = c => {
+    closed = c ? new Set(h2s.map((_, i) => i)) : new Set();
+    try { localStorage.setItem(KEY, JSON.stringify([...closed])); } catch (e) {}
+    h2s.forEach((h, i) => { h.classList.toggle("closed", c); secs[i].classList.toggle("closed", c);
+      h.querySelector(".cv span").textContent = c ? "開く" : "折りたたむ"; });
+  };
+  tools.querySelector("#allc").addEventListener("click", () => setAll(true));
+  tools.querySelector("#allo").addEventListener("click", () => setAll(false));
+
+  // 追従バーの高さをCSS変数へ（マトリクスの固定ヘッダ位置に使う）
+  const nb = document.querySelector(".navbar");
+  const setH = () => document.documentElement.style.setProperty("--barh", nb.offsetHeight + "px");
+  setH(); addEventListener("resize", setH);
+
+  // 起動時に ?q= を復元
+  const q0 = new URL(location.href).searchParams.get("q");
+  if (q0) { q.value = q0; run(false); }
 
   // 6) 相手名をタップしたらその相手で絞る（スマホの主動線）
   document.addEventListener("click", e => {
