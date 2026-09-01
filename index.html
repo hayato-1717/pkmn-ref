@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%277%27 fill=%27%230e1013%27/%3E%3Ctext x=%2716%27 y=%2723%27 font-size=%2720%27 text-anchor=%27middle%27 fill=%27%233fb27f%27%3E%E2%97%8E%3C/text%3E%3C/svg%3E">
 <title>対戦リファレンス</title>
 <style>
   :root{
@@ -253,12 +254,37 @@
      横スクロール用の overflow だけだと、縦の sticky ヘッダがビューポートに追従できないため。 */
   .mxbox{max-height:76vh;overflow:auto;border-radius:12px;
        box-shadow:0 1px 2px rgba(0,0,0,.28), 0 10px 26px -18px rgba(0,0,0,.5)}
-  .mxbox table.mx th.top{position:sticky;top:0;background:var(--surface);z-index:3}
-  .mxbox table.mx tr:first-child th.foe{position:sticky;left:0;top:0;z-index:4}
+  /* table の overflow:hidden（角丸クリップ用）がテーブル自身をスクロール基準にしてしまい、
+     ヘッダの sticky が無効化されていた。箱側で角丸クリップするのでここでは外す。 */
+  .mxbox table.mx{overflow:visible;border-radius:0;border:0}
+  .mxbox table.mx thead th.top{position:sticky;top:0;background:var(--surface);z-index:3}
+  .mxbox table.mx thead th.foe{position:sticky;left:0;top:0;z-index:4}
   :where(a,button,input,[tabindex]):focus-visible{outline:2px solid var(--good);outline-offset:2px;border-radius:6px}
   @media (prefers-reduced-motion: reduce){
     *{animation-duration:.001ms!important;transition-duration:.001ms!important;scroll-behavior:auto!important}
   }
+
+  /* ---------- スマホ用マトリクス（2026-09-01）----------
+     390px では相手名の列が幅の7割を占め、自分6体のうち1列しか見えず表として機能しない。
+     実測で判明したので、狭い画面では表をやめて「相手1体＝1カード」に切り替える。 */
+  /* 表と同じく箱に収める。54枚をそのまま並べるとページが25,000px近くなるため。 */
+  #mxCards{display:grid;gap:8px;max-height:76vh;overflow:auto;padding:2px}
+  .fcard{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:9px 11px}
+  .fcard .fh{display:flex;align-items:center;gap:8px}
+  .fcard .fh img{width:34px;height:34px;flex:0 0 34px;object-fit:contain}
+  .fcard .fn{font-weight:700;font-size:13px;line-height:1.25}
+  .fcard .fr{font-size:9.5px;color:var(--muted)}
+  .fcard .chips{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-top:8px}
+  .fcard .ch{display:flex;align-items:center;justify-content:center;gap:4px;cursor:pointer;
+       border:1px solid var(--border);border-radius:9px;padding:5px 4px;font-size:13px;background:var(--flat-bg)}
+  .fcard .ch img{width:22px;height:22px;object-fit:contain}
+  .fcard .ch.good{color:var(--good)}
+  .fcard .ch.ok,.fcard .ch.flat{color:var(--muted)}
+  .fcard .ch.flat{opacity:.6}
+  .fcard .ch.bad{background:var(--crit-bg);border-color:var(--crit);color:var(--crit);font-weight:800}
+  .fcard .dtl{font-size:11px;color:var(--ink2);margin-top:7px;line-height:1.55;
+       border-top:1px solid var(--grid);padding-top:6px}
+  .fcard .dtl .a{color:var(--good)} .fcard .dtl .d{color:var(--crit)}
 </style>
 </head>
 <body>
@@ -315,7 +341,8 @@
   <span><i class="sw m bad">×</i>落とされる（出すな）</span>
 </div>
 <p class="note">セルにカーソル／タップで与ダメ・被ダメを表示。◎○△×の記号が意味を持つので色が見えなくても読めます。</p>
-<div class="mxbox"><table class="mx" id="mx"></table></div>
+<div class="mxbox" id="mxbox"><table class="mx" id="mx"></table></div>
+<div id="mxCards"></div>
 
 <h2>4. 相手別 対策</h2>
 <div class="box" id="counters"></div>
@@ -462,9 +489,9 @@ document.getElementById("roster").innerHTML = PARTY.map(p =>
 
 // matrix
 (function(){
-  let h = "<tr><th class='foe'>相手 ↓ ／ 自分 →</th>";
+  let h = "<thead><tr><th class='foe'>相手 ↓ ／ 自分 →</th>";
   DATA.mine.forEach(m => h += "<th class='top'>"+img(m.name)+"<span>"+m.name.replace("メガ","M")+"</span></th>");
-  h += "</tr>";
+  h += "</tr></thead><tbody>";
   DATA.foes.forEach((f,i) => {
     h += "<tr><th class='foe'><div class='fw'>"+img(f.name)
        + "<div><div class='fn'>"+clean(f.name)+"</div><div class='fr'>"+f.types+(f.tier?" <span style='color:var(--warn)'>"+f.tier+"</span>":"")+"</div></div></div></th>";
@@ -474,7 +501,50 @@ document.getElementById("roster").innerHTML = PARTY.map(p =>
     });
     h += "</tr>";
   });
-  document.getElementById("mx").innerHTML = h;
+  document.getElementById("mx").innerHTML = h + "</tbody>";
+
+  // --- 狭い画面ではカード表示に切り替える ---
+  //     表と両方をDOMに残すと絞り込みの件数が二重に数えられるので、片方だけを描く。
+  const cards = document.getElementById("mxCards");
+  const boxEl = document.getElementById("mxbox");
+  // matchMedia が無い/古い環境でも落ちないようにする（1つのscriptなので例外が出ると以降が全部止まる）
+  const mq = (typeof matchMedia === "function")
+    ? matchMedia("(max-width: 700px)")
+    : { matches: false, addEventListener: function(){}, addListener: function(){} };
+  function renderCards(){
+    cards.innerHTML = DATA.foes.map((f, i) =>
+      "<div class='fcard'><div class='fh'>" + img(f.name)
+      + "<div><div class='fn hit'>" + clean(f.name) + "</div>"
+      + "<div class='fr'>" + f.types + (f.tier ? " <span style='color:var(--warn)'>" + f.tier + "</span>" : "") + "</div></div></div>"
+      + "<div class='chips'>" + DATA.cells[i].map((c, j) => {
+          const d = [clean(f.name), DATA.mine[j].name, c.atk, c.ap, c.ae, c.dfn, c.dp, c.de, c.shield ? "1" : "0"].join("|");
+          return "<button class='ch " + c.v + "' data-d=\"" + d + "\">" + img(DATA.mine[j].name) + GLYPH[c.v] + "</button>";
+        }).join("") + "</div><div class='dtl' hidden></div></div>").join("");
+  }
+  function syncView(){
+    const small = mq.matches;
+    boxEl.hidden = small;
+    cards.hidden = !small;
+    if (small) { if (!cards.children.length) renderCards(); }
+    else cards.innerHTML = "";
+    if (window.__rerunFilter) window.__rerunFilter();
+  }
+  if (mq.addEventListener) mq.addEventListener("change", syncView);
+  else if (mq.addListener) mq.addListener(syncView);
+  syncView();
+
+  // カードのチップをタップしたら、その組み合わせの与ダメ・被ダメを開く
+  cards.addEventListener("click", e => {
+    const b = e.target.closest(".ch"); if (!b) return;
+    const dtl = b.closest(".fcard").querySelector(".dtl");
+    const p = b.getAttribute("data-d").split("|");
+    const html = "<b>" + p[1] + "</b> vs " + p[0]
+      + "<br><span class='a'>与 " + p[2] + " " + p[3] + " (×" + p[4] + ")</span>"
+      + "<br><span class='d'>被 " + p[5] + " " + p[6] + " (×" + p[7] + ")</span>"
+      + (p[8] === "1" ? "<br><span style='color:var(--warn)'>ばけのかわ: 処理に1ターン余分</span>" : "");
+    if (dtl.dataset.k === p[1] && !dtl.hidden) { dtl.hidden = true; dtl.dataset.k = ""; return; }
+    dtl.innerHTML = html; dtl.dataset.k = p[1]; dtl.hidden = false;
+  });
 })();
 
 // tooltip
@@ -748,7 +818,7 @@ if ("serviceWorker" in navigator && location.protocol === "https:") {
         cur.rows.push(tr); left--;
       });
     });
-    sec.querySelectorAll(".ctr, .row").forEach(e => gs.push({ rows: [e], always: false }));
+    sec.querySelectorAll(".ctr, .row, .fcard").forEach(e => gs.push({ rows: [e], always: false }));
     return gs;
   }
   const rowsOf = sec => groupsOf(sec);
@@ -903,12 +973,13 @@ if ("serviceWorker" in navigator && location.protocol === "https:") {
   setH(); addEventListener("resize", setH);
 
   // 起動時に ?q= を復元
+  window.__rerunFilter = () => run(false);
   const q0 = new URL(location.href).searchParams.get("q");
   if (q0) { q.value = q0; run(false); }
 
   // 6) 相手名をタップしたらその相手で絞る（スマホの主動線）
   document.addEventListener("click", e => {
-    const t = e.target.closest("#mx th.foe .fn, #counters .ctr .who b, #ngbox .ctr .who b");
+    const t = e.target.closest("#mx th.foe .fn, #mxCards .fn, #counters .ctr .who b, #ngbox .ctr .who b");
     if (!t) return;
     q.value = t.textContent.trim();
     run();
